@@ -73,45 +73,46 @@ public class AES {
     
     //Method class AES
     //Methode 1)
-	public static int[] stringToBits(String message) {
-		int[] tableauBits = new int[message.length() * 8];
-		int index = 0;
-		
-		for (int i = 0; i < message.length(); i++) {
-			int Ascii = (int) message.charAt(i);
-			int[] Character = new int[8];
-			
-			for (int j = 7; j >= 0; j--) {
-				Character[j] = Ascii % 2;
-				Ascii = Ascii / 2;
-			}
-			for (int bit : Character) {
-                tableauBits[index++] = bit;
+    public static int[] stringToBits(String message) {
+        int[] tableauBits = new int[message.length() * 8];
+        int index = 0;
+        for (int i = 0; i < message.length(); i++) {
+            int ascii = message.charAt(i);
+            for (int j = 7; j >= 0; j--) {
+                tableauBits[index++] = (ascii >> j) & 1;
             }
-		}
-		return tableauBits;
-	}
+        }
+        return tableauBits;
+    }
 	
 	//Methode 2)
-	public static String bitsToString(int[] blocs) {
-	    StringBuilder message = new StringBuilder();
-	    
-	    for (int i = 0; i < blocs.length; i += 8) { //Parcourt le tableau de bits, octet par octet (groupe de 8 bits)
-	        int valeurAscii = 0;
-	        
-	        
-	        for (int j = 0; j < 8; j++) { //Convertit les 8 bits (binaire) en valeur entière (décimale)s
-	            valeurAscii = (valeurAscii * 2) + blocs[i + j];
-	        }
-	        message.append((char) valeurAscii); //Convertit le code ASCII obtenu en caractère et l'ajoute au message
-	    } 
-	    return message.toString();
-	}
+    public static String bitsToString(int[] blocs) {
+        StringBuilder message = new StringBuilder();
+        for (int i = 0; i < blocs.length; i += 8) {
+            int valeurAscii = 0;
+
+            for (int j = 0; j < 8; j++) {
+                valeurAscii = valeurAscii * 2 + blocs[i + j];
+            }
+            message.append((char) valeurAscii);
+        }
+        return message.toString();
+    }
 	
 	//Methode 3)
-	public static void genereMasterKey() {
-		return ;
-	}
+    public void genereMasterKey() {
+        int nombreOctets = tailleCleMaitre / 8;
+
+        masterKey = new int[nombreOctets][8];
+
+        for (int i = 0; i < nombreOctets; i++) {
+            int valeur = (int) (Math.random() * 256);
+
+            for (int j = 7; j >= 0; j--) {
+                masterKey[i][7 - j] = (valeur >> j) & 1;
+            }
+        }
+    }
 	
 	//Methode 4)
 	public static int[] bourrage(int[] blocs) {
@@ -124,8 +125,29 @@ public class AES {
 		}
 
 	//Test
-	public static void main(String[] args) {
-		stringToBits("a");
-		System.out.println(bitsToString(stringToBits("salut")));
-	}
+		public static void main(String[] args) {
+		    String message = "salut";
+		    int[] bits = stringToBits(message);
+		    System.out.println("Message : " + message);
+		    System.out.println("Bits : ");
+
+		    for (int bit : bits) {
+		        System.out.print(bit);
+		    }
+		    System.out.println();
+		    System.out.println("Retour en texte : " + bitsToString(bits));
+		    
+		    AES aes = new AES(128, null);
+
+		    aes.genereMasterKey();
+
+		    System.out.println("Cle maitre AES-128 :");
+
+		    for (int i = 0; i < aes.masterKey.length; i++) {
+		        for (int j = 0; j < 8; j++) {
+		            System.out.print(aes.masterKey[i][j]);
+		        }
+		        System.out.println();
+		    }
+		}
 }
