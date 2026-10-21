@@ -1,7 +1,6 @@
 package aes;
 
 public class AES {
-	//Constantes class AES
 	private static final int TAILLE_BLOC = 128; 
 	private static final int[] Rcon = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 	private static final int[] sBox = {
@@ -48,28 +47,28 @@ public class AES {
     private int[][][] keys;
     
     //constructor class AES
-    public AES(int tailleCleMaitre, int[][] inputKey) {
-    	if (tailleCleMaitre != 128 && tailleCleMaitre != 192 && tailleCleMaitre != 256) {
-            throw new IllegalArgumentException("La taille de la clé doit être de 128, 192 ou 256 bits.");
+    public AES(int tailleCleMaitre) {
+        if (tailleCleMaitre != 128 && tailleCleMaitre != 192 && tailleCleMaitre != 256) {
+            throw new IllegalArgumentException(
+                "La taille de la clé doit être de 128, 192 ou 256 bits."
+            );
         }
-    	
-    	this.tailleCleMaitre = tailleCleMaitre;
-    	this.masterKey = inputKey;
-    	
-    	switch (tailleCleMaitre){
-    	case 192:
-    		this.nbRonde = 12;
-    		break;
-    		
-    	case 256:
-    		this.nbRonde = 14;
-    		break;
-    	
-    	default:
-    		this.nbRonde = 10;
-    	}
+
+        this.tailleCleMaitre = tailleCleMaitre;
+        switch (tailleCleMaitre) {
+            case 192:
+                this.nbRonde = 12;
+                break;
+            case 256:
+                this.nbRonde = 14;
+                break;
+            default:
+                this.nbRonde = 10;
+        }
+        this.genereMasterKey();
+        this.createKeys();
     }
-    
+
     //Method class AES
     private static int[] stringToBits(String message) {
         int[] tableauBits = new int[message.length() * 8];
@@ -82,6 +81,7 @@ public class AES {
         }
         return tableauBits;
     }
+    //Methode 1)
     private static String bitsToString(int[] blocs) {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < blocs.length; i += 8) {
@@ -94,6 +94,7 @@ public class AES {
         }
         return message.toString();
     }
+    //Methode 2)
     private void genereMasterKey() {
         int nombreOctets = tailleCleMaitre / 8;
 
@@ -107,14 +108,10 @@ public class AES {
             }
         }
     }
+    //Methode 3)
     private void createKeys() {
-    // Allocation correcte à 11 pour accueillir les indices de 0 à 10 inclus
     this.keys = new int[this.nbRonde + 1][16][8];
-    
-    // L'algorithme standard génère 44 mots de 32 bits (w0 à w43)
     int[][] w = new int[44][32];
-    
-    // Copie de la masterKey dans les 4 premiers mots
     int indexOctet = 0;
     for (int i = 0; i < 4; i++) {
         int bitIdx = 0;
@@ -125,19 +122,14 @@ public class AES {
             indexOctet++;
         }
     }
-    
-    // Génération des mots restants (w4 à w43)
     for (int i = 4; i < 44; i++) {
         int[] temp = w[i - 1].clone();
         
         if (i % 4 == 0) {
-            // RotWord
             int[] rotTemp = new int[32];
             System.arraycopy(temp, 8, rotTemp, 0, 24);
             System.arraycopy(temp, 0, rotTemp, 24, 8);
             temp = rotTemp;
-            
-            // SubWord via sBox
             int[] subTemp = new int[32];
             for (int o = 0; o < 4; o++) {
                 int valOctet = 0;
@@ -150,8 +142,6 @@ public class AES {
                 }
             }
             temp = subTemp;
-            
-            // XOR avec Rcon
             int rconVal = Rcon[(i / 4) - 1];
             int firstOctetVal = 0;
             for (int b = 0; b < 8; b++) {
@@ -162,14 +152,10 @@ public class AES {
                 temp[7 - b] = (firstOctetVal >> b) & 1;
             }
         }
-        
-        // w[i] = w[i-4] XOR temp
         for (int b = 0; b < 32; b++) {
             w[i][b] = w[i - 4][b] ^ temp[b];
         }
     }
-    
-    // Distribution des 44 mots dans le tableau 3D this.keys
     for (int ronde = 0; ronde <= this.nbRonde; ronde++) {
         int octetIdx = 0;
         for (int wordIdx = 0; wordIdx < 4; wordIdx++) {
@@ -183,7 +169,8 @@ public class AES {
             }
         }
     }
-}
+    }
+    //Methode 4)
     private static int[] bourrage(int[] blocs) {
         int reste = blocs.length % 128;
         int taillePadding = 128 - reste; 
@@ -198,17 +185,12 @@ public class AES {
         }
         return resultat;
     }
+    //Methode 5)
     private static int[] debourrage(int[] blocs) {
     	int i = blocs.length - 1;
-    
-    	// On recule depuis la fin tant qu'on voit des zéros
     	while (i >= 0 && blocs[i] == 0) {
     		i--;
     	}
-    
-    	// À ce stade, blocs[i] est le bit '1' de bourrage.
-    	// Les bits du message s'arrêtent juste avant. 
-    	// La taille du message est donc exactement égale à la valeur de l'index i.
     	int tailleOriginale = i; 
     
     	int[] resultat = new int[tailleOriginale];
@@ -229,7 +211,6 @@ public class AES {
         }
         return blocs;
     }
-    
     //Methode 7)
     private static int[] recollage_des_blocs(int[][] blocs) {
         int nombreDeBlocs = blocs.length;
@@ -239,7 +220,6 @@ public class AES {
         }
         return messageBinaire;
     }
-    
     //Methode 8)
     public static int[] xor(int[] tab1, int[] tab2) {
         if (tab1.length != tab2.length) {
@@ -251,13 +231,11 @@ public class AES {
         }
         return resultat;
     }
-
     //Methode 9)
     private static int[] addRoundKey(int[] state, int[] roundKey) {
     	return xor(state, roundKey); 
-    }
-    
-    //Methode 11)
+    } 
+    //Methode 10)
     private static void subByte(byte[][] state) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -270,9 +248,8 @@ public class AES {
                 state[i][j] = (byte) valeurSBox;
             }
         }
-    }
-    
-    //Methode 12)
+    }   
+    //Methode 11)
     private static void subByteInv(byte[][] state) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -280,13 +257,12 @@ public class AES {
                 state[i][j] = (byte) sBoxInv[indice];
             }
         }
-    }
-    
-    //Methode 13)
+    } 
+    //Methode 12)
     private static void shiftRows(byte[][] state) {
         byte[] copy = new byte[4];
 
-        copy[0] = state[1][1];   // ← ligne manquante
+        copy[0] = state[1][1];
         copy[1] = state[1][2];
         copy[2] = state[1][3];
         copy[3] = state[1][0];
@@ -304,8 +280,7 @@ public class AES {
         copy[3] = state[3][2];
         System.arraycopy(copy, 0, state[3], 0, 4);
     }
-
-    //Methode 14)
+    //Methode 13)
     private static void shiftRowsInv(byte[][] state) {
         byte[] copy = new byte[4];
         copy[0] = state[1][3];
@@ -325,47 +300,40 @@ public class AES {
         copy[2] = state[3][3];
         copy[3] = state[3][0];
         System.arraycopy(copy, 0, state[3], 0, 4);
-    }
-    
-    //Methode 15)
+    } 
+    //Methode 14)
     private static byte deux_a(byte a) {
         if ((a & 0x80) != 0) {
             return (byte) ((a << 1) ^ 0x1B);
         } else {
             return (byte) (a << 1);
         }
-    }
-    
-    //Methode 16)
+    }    
+    //Methode 15)
     private static byte trois_a(byte a) {
         return (byte) (deux_a(a) ^ a);
-    }
-    
-    //Methode 17)
+    } 
+    //Methode 16)
     private static byte neuf_a(byte a) {
         return (byte) (deux_a(deux_a(deux_a(a))) ^ a);
     }
-    
-    //Methode 18)
+    //Methode 17)
     private static byte onze_a(byte a) {
         byte double_a = deux_a(a);
         return (byte) (deux_a(deux_a(double_a)) ^ double_a ^ a);
     }
-    
-    //Methode 19)
+    //Methode 18)
     private static byte treize_a(byte a) {
         byte quadruple_a = deux_a(deux_a(a));
         return (byte) (deux_a(quadruple_a) ^ quadruple_a ^ a);
     }
-    
-    //Methode 20)
+    //Methode 19)
     private static byte quatorze_a(byte a) {
         byte double_a = deux_a(a);
         byte quadruple_a = deux_a(double_a);
         return (byte) (deux_a(quadruple_a) ^ quadruple_a ^ double_a);
     }
-    
-    //Methode 21)
+    //Methode 20)
     private static byte[] prodAu(byte[] col) {
         byte[] result = new byte[4];
         
@@ -376,8 +344,7 @@ public class AES {
         
         return result;
     }
-    
-    //Methode 22)
+    //Methode 21)
     private static byte[] prodAuInv(byte[] col) {
         byte[] result = new byte[4];
         
@@ -388,8 +355,7 @@ public class AES {
         
         return result;
     }
-    
-    //Methode 23)
+    //Methode 22)
     private static void mixColumns(byte[][] state) {
         for (int j = 0; j < 4; j++) {
             byte[] col = new byte[4];
@@ -403,8 +369,7 @@ public class AES {
             }
         }
     }
-   
-    //Methode 24)
+    //Methode 23)
     public int[] crypte(String message) {
     int[] bits = stringToBits(message);
     int[] bitsBourres = bourrage(bits);
@@ -413,9 +378,6 @@ public class AES {
     
     for (int b = 0; b < blocs.length; b++) {
         int[] blocActuel = blocs[b].clone();
-        
-        // --- RONDE INITIALE ---
-        // Aplatissement de la clé de la ronde 0 à la volée
         int[] roundKeyFlat = new int[128];
         int kIdx = 0;
         for (int i = 0; i < 16; i++) {
@@ -424,8 +386,6 @@ public class AES {
             }
         }
         blocActuel = addRoundKey(blocActuel, roundKeyFlat);
-        
-        // Conversion locale int[] -> byte[][]
         byte[][] state = new byte[4][4];
         int idxBit = 0;
         for (int j = 0; j < 4; j++) {
@@ -437,14 +397,10 @@ public class AES {
                 state[i][j] = (byte) valeurOctet;
             }
         }
-        
-        // --- RONDES INTERMÉDIAIRES (1 à 9) ---
         for (int ronde = 1; ronde < this.nbRonde; ronde++) {
             subByte(state);
             shiftRows(state);
             mixColumns(state);
-            
-            // Conversion locale byte[][] -> int[]
             idxBit = 0;
             for (int j = 0; j < 4; j++) {
                 for (int i = 0; i < 4; i++) {
@@ -454,8 +410,6 @@ public class AES {
                     }
                 }
             }
-            
-            // Aplatissement de la clé de la ronde courante à la volée
             roundKeyFlat = new int[128];
             kIdx = 0;
             for (int i = 0; i < 16; i++) {
@@ -464,8 +418,6 @@ public class AES {
                 }
             }
             blocActuel = addRoundKey(blocActuel, roundKeyFlat); 
-            
-            // Re-conversion locale int[] -> byte[][]
             idxBit = 0;
             for (int j = 0; j < 4; j++) {
                 for (int i = 0; i < 4; i++) {
@@ -477,12 +429,8 @@ public class AES {
                 }
             }
         }
-        
-        // --- RONDE FINALE (10) ---
         subByte(state);
         shiftRows(state);
-        
-        // Conversion finale byte[][] -> int[]
         idxBit = 0;
         for (int j = 0; j < 4; j++) {
             for (int i = 0; i < 4; i++) {
@@ -492,8 +440,6 @@ public class AES {
                 }
             }
         }
-        
-        // Aplatissement de la clé de la ronde finale (10) à la volée
         roundKeyFlat = new int[128];
         kIdx = 0;
         for (int i = 0; i < 16; i++) {
@@ -507,20 +453,14 @@ public class AES {
     }
     
     return recollage_des_blocs(blocsChiffres);
-}
-
+    }
+    //Methode 24)
     public String decrypte(int[] messCode) {
         int[][] blocsChiffres = decoupage_en_blocs(messCode);
         int[][] blocsDechiffres = new int[blocsChiffres.length][128];
         
         for (int b = 0; b < blocsChiffres.length; b++) {
             int[] blocActuel = blocsChiffres[b].clone();
-            
-            // --- ANNULATION DE LA RONDE FINALE (Ronde 10) ---
-            // Dans crypte, la fin était : subByte -> shiftRows -> addRoundKey(10)
-            // L'inverse est donc : addRoundKey(10) -> shiftRowsInv -> subByteInv
-            
-            // 1. addRoundKey (10)
             int[] roundKeyFlat = new int[128];
             int kIdx = 0;
             for (int i = 0; i < 16; i++) {
@@ -529,8 +469,6 @@ public class AES {
                 }
             }
             blocActuel = addRoundKey(blocActuel, roundKeyFlat); 
-            
-            // Conversion locale int[] -> byte[][]
             byte[][] state = new byte[4][4];
             int idxBit = 0;
             for (int j = 0; j < 4; j++) {
@@ -542,18 +480,9 @@ public class AES {
                     state[i][j] = (byte) valeurOctet;
                 }
             }
-            
-            // 2. shiftRowsInv & subByteInv
             shiftRowsInv(state);
             subByteInv(state);
-            
-            // --- ANNULATION DES RONDES INTERMÉDIAIRES (Rondes 9 à 1) ---
-            // Dans crypte : subByte -> shiftRows -> mixColumns -> addRoundKey
-            // L'inverse strict : addRoundKey -> mixColumnsInv -> shiftRowsInv -> subByteInv
             for (int ronde = this.nbRonde - 1; ronde >= 1; ronde--) {
-                
-                // 1. addRoundKey de la ronde actuelle
-                // On repasse temporairement la matrice state en int[] pour appliquer le XOR
                 idxBit = 0;
                 for (int j = 0; j < 4; j++) {
                     for (int i = 0; i < 4; i++) {
@@ -572,8 +501,6 @@ public class AES {
                     }
                 }
                 blocActuel = addRoundKey(blocActuel, roundKeyFlat); 
-                
-                // Re-conversion immédiate en byte[][] state pour traiter les transformations
                 idxBit = 0;
                 for (int j = 0; j < 4; j++) {
                     for (int i = 0; i < 4; i++) {
@@ -584,8 +511,6 @@ public class AES {
                         state[i][j] = (byte) valeurOctet;
                     }
                 }
-                
-                // 2. mixColumnsInv (prodAuInv sur chaque colonne)
                 for (int j = 0; j < 4; j++) {
                     byte[] col = new byte[4];
                     for (int i = 0; i < 4; i++) {
@@ -596,17 +521,11 @@ public class AES {
                         state[i][j] = newCol[i];
                     }
                 }
-                
-                // 3. shiftRowsInv
                 shiftRowsInv(state);
                 
-                // 4. subByteInv
                 subByteInv(state);
             }
-            
-            // --- ANNULATION DE LA RONDE INITIALE (Ronde 0) ---
-            // Dans crypte, le tout début était : addRoundKey(0)
-            // L'inverse final est donc simplement : addRoundKey(0)
+
             idxBit = 0;
             for (int j = 0; j < 4; j++) {
                 for (int i = 0; i < 4; i++) {
@@ -632,59 +551,6 @@ public class AES {
         int[] bitsBourres = recollage_des_blocs(blocsDechiffres);
         int[] bitsClairs = debourrage(bitsBourres);
         return bitsToString(bitsClairs);
-    }
-
-    
-	//Test
-    public static void main(String[] args) {
-        String message = "salut";
-        int[] bits = stringToBits(message);
-        System.out.println("Message : " + message);
-        System.out.println("Bits : ");
-
-        for (int bit : bits) {
-            System.out.print(bit);
-        }
-        System.out.println();
-        System.out.println("Retour en texte : " + bitsToString(bits));
-        AES aes = new AES(128, null);
-        aes.genereMasterKey();
-
-        System.out.println("Cle maitre AES-128 :");
-        for (int i = 0; i < aes.masterKey.length; i++) {
-            for (int j = 0; j < 8; j++) {
-                System.out.print(aes.masterKey[i][j]);
-            }
-            System.out.println(); 
-        }
-        
-        int[] messageBits = stringToBits("salut");
-        int[] messageBourre = bourrage(messageBits);
-
-        System.out.println("Taille avant bourrage : " + messageBits.length);
-        System.out.println("Taille après bourrage : " + messageBourre.length);
-
-        int[] messageDebourre = debourrage(messageBourre);
-
-        System.out.println("Taille après débourrage : " + messageDebourre.length);
-        System.out.println("Message retrouvé : " + bitsToString(messageDebourre));
-        
-        System.out.println("\n--- TEST DU CHIFFREMENT / DÉCHIFFREMENT GLOBAL ---");
-        aes.createKeys(); 
-        
-        int[] messageChiffreBits = aes.crypte(message);
-        System.out.print("Message chiffré (bits) : ");
-        for (int bit : messageChiffreBits) {
-            System.out.print(bit);
-        }
-        System.out.println();
-        String messageFinalDechiffre = aes.decrypte(messageChiffreBits);
-        System.out.println("Message final après décryptage : " + messageFinalDechiffre);
-        if (message.equals(messageFinalDechiffre)) {
-            System.out.println("✅ Succès ! Le chiffrement et le déchiffrement AES fonctionnent parfaitement.");
-        } else {
-            System.out.println("❌ Erreur : Le message déchiffré ne correspond pas au message d'origine.");
-        }
     }
 
 }
